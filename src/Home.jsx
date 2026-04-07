@@ -13,27 +13,108 @@ import {
   ShieldCheck,
   ShieldAlert,
 } from "lucide-react";
-import Chat from "./Chat";
+
 export default function Home() {
   const navigate = useNavigate();
-  const [scanned, setscanned] = useState(false);
   const inputRef = useRef(null);
-  const [showbtns, setShowbtns] = useState(false);
+  const [scanned, setscanned] = useState(false);
   const [dragtext, setDragtext] = useState(
     "Drag & drop your files here or click to browse",
   );
-  const [file, setFile] = useState(null);
-  // const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isSafe, setisSafe] = useState(null);
-  const [boxstate, setboxstate] = useState();
-  const [sessionId, setSessionId] = useState(null);
   const [riskLevel, setRiskLevel] = useState(null);
-  const [summary, setSummary] = useState(null);
   const [report, setReport] = useState(null);
   const [showReport, setShowReport] = useState(false);
-const { files ,setFiles } = useContext(FileContext);
-  //   button handlers
+  const { files = [], setFiles } = useContext(FileContext);
+  const accessToken = localStorage.getItem("accessToken");
+
+  //uploading file
+  async function uploadFile(file) {
+    setDragtext("Uploading file...");
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("http://localhost:3000/upload/", {
+        method: "POST",
+        body: formData,
+        headers: {
+          Authorization: `bearer ${accessToken}`,
+        },
+      });
+
+      const data = await res.json();
+      console.log(data);
+      setFiles([
+        {
+          _id: data.pdf._id,
+          name: file.name,
+          originalFile: file,
+        },
+      ]);
+
+      
+      setDragtext("File uploaded and ready for scan");
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }
+  function handleChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    uploadFile(file);
+  }
+  function handledrop(e) {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+
+    uploadFile(file);
+  }
+
+  //scanning file
+  async function handleScan(e) {
+    e.stopPropagation();
+    if (!files?.length) return;
+
+    setLoading(true);
+    setscanned(false);
+
+    try {
+      const fileId = files[0]?._id;
+      const res = await fetch(`http://localhost:3000/security/scan/${fileId}`, {
+        method: "POST",
+        headers: {
+          Authorization: `bearer ${accessToken}`,
+        },
+      });
+      const data = await res.json();
+      console.log("Scan result:", data);
+      // تحديث الـ state
+
+      setisSafe(data.fileIsSafe);
+      setReport(data.updatedFile);
+      setRiskLevel(data.updatedFile.security.riskLevel);
+      setscanned(true);
+      setDragtext("Scan completed");
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const handleNewScan = () => {
+    if (inputRef.current) {
+      inputRef.current.value = null;
+      inputRef.current.click();
+    }
+  };
   const handleCancel = (e) => {
     e.stopPropagation();
     setFile(null);
@@ -43,152 +124,35 @@ const { files ,setFiles } = useContext(FileContext);
     setShowbtns(false);
     setDragtext("Drag & drop your files here or click to browse");
 
-    // إعادة تهيئة الـ input
     if (inputRef.current) {
       inputRef.current.value = null;
     }
   };
-const handleNewScan = () => {
- 
 
-  // إعادة تهيئة input وفتح File Explorer
-  if (inputRef.current) {
-    inputRef.current.value = null;
-    inputRef.current.click();
-  }
-};
-  async function handleScan(e) {
-  e.stopPropagation();
-  if (!files.length) return;
-
-  setLoading(true);
-  setShowbtns(false);
-  setscanned(false);
-
-  try {
-    // نفترض إن أول ملف هو اللي رفعناه
-    const fileId = files[0]._id; // لو عندك الـ _id من upload
-    const res = await fetch(`http://localhost:3000/security/scan/${fileId}`, {
-      method: "POST",
-    });
-    const data = await res.json();
-
-    // تحديث الـ state
-    setSessionId(data.sessionId);
-    setRiskLevel(data.report.risk_level);
-    setSummary(data.summarization);
-    setReport(data.report);
-    setisSafe(data.report.risk_level === 1 || data.report.risk_level === 2);
-    setscanned(true);
-    setDragtext("Scan completed");
-  } catch (err) {
-    console.error(err);
-  } finally {
-    setLoading(false);
-  }
-}
-
-  //   button handlers end
-
- async function handleChange(e) {
-  const selectedFiles = e.target.files;
-  if (!selectedFiles.length) return;
-
-  const file = selectedFiles[0];
-  setDragtext("Uploading file...");
-  setShowbtns(true);
-  setLoading(true);
-
-  const formData = new FormData();
-  formData.append("file", file);
-
-  try {
-    const res = await fetch("http://localhost:3000/upload/", {
-      method: "POST",
-      body: formData,
-    });
-    const data = await res.json();
-
-    // تخزين الملف مع _id من السيرفر
-    setFiles([{ ...file, _id: data.pdf._id }]);
-    setSessionId(data.sessionId);
-    setRiskLevel(data.report.risk_level);
-    setSummary(data.summarization);
-    setReport(data.report);
-    setisSafe(data.report.risk_level === 1 || data.report.risk_level === 2);
-    setscanned(true);
-    setDragtext("File uploaded and ready for scan");
-  } catch (err) {
-    console.error(err);
-  } finally {
-    setLoading(false);
-  }
-}
   function handlenavigate(e) {
-  e.preventDefault();
-
-  if (!files.length) return;
-
-  const file = files[0];
-
-  // 👇 نحول الملف لـ URL
-  const fileUrl = URL.createObjectURL(file);
-
-  navigate("/Chat", {
-   state: {
-    summary: "",
-    sessionId,
-    fileUrl,
-    fileId: files[0]?._id,
-    accessToken: "",
-  },
-  });
-}
-  function handleclick(e) {
     e.preventDefault();
-    console.log("🖱 clicking input");
-    inputRef.current.click();
+
+    if (!files?.length) return;
+
+    // بنستخدم الـ originalFile اللي خزنناه في الـ uploadFile
+    const fileToOpen = files[0].originalFile;
+
+    if (fileToOpen) {
+      const fileUrl = URL.createObjectURL(fileToOpen);
+
+      navigate("/Chat", {
+        state: {
+          fileUrl,
+          fileId: files[0]?._id,
+          accessToken: accessToken,
+        },
+      });
+    }
   }
 
   function handledrag(e) {
     e.preventDefault();
     setDragtext("drop your files here ");
-  }
-
-  // drop
-  async function handledrop(e) {
-    e.preventDefault();
-    const droppedFiles = e.dataTransfer.files;
-    if (!droppedFiles.length) return;
-
-    const file = droppedFiles[0];
-    setFiles([file]);
-    setDragtext("Uploading file...");
-    setShowbtns(true);
-    setLoading(true);
-
-    const formData = new FormData();
-    formData.append("file", file);
-    try {
-      const res = await fetch("http://localhost:3000/upload/", {
-        method: "POST",
-        body: formData,
-      });
-      const data = await res.json();
-      setFiles([{ ...file, _id: data.pdf._id }]);
-      setSessionId(data.sessionId);
-      setRiskLevel(data.report.risk_level);
-      setSummary(data.summarization);
-      setReport(data.report);
-
-      setisSafe(data.report.risk_level === 1 || data.report.risk_level === 2);
-      setscanned(true);
-      setDragtext("Scan completed");
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
   }
 
   function handledragleave(e) {
@@ -319,14 +283,14 @@ const handleNewScan = () => {
             )}
 
             {/* بعد اختيار ملف (pre-scan) */}
-            {!scanned && !loading && files.length > 0 && (
+            {!scanned && !loading && files?.length > 0 && (
               <>
                 <div className="dragtext">{dragtext}</div>
 
                 <div className="file-name">
-                  {files[0].name.length > 20
-                    ? files[0].name.slice(0, 20) + "..."
-                    : files[0].name}
+                  {files[0]?.name?.length > 20
+                    ? files[0]?.name.slice(0, 20) + "..."
+                    : files[0]?.name || "Selected file"}
                 </div>
 
                 <div className="btns">
@@ -410,7 +374,6 @@ const handleNewScan = () => {
         {showReport && report && (
           <div className="modal-overlay">
             <div className="modal-content">
-             
               <div
                 style={{ backgroundColor: "#EAEAEA" }}
                 className="modal-header"
@@ -424,10 +387,55 @@ const handleNewScan = () => {
                 </button>
               </div>
 
-            
-              <div className="modal-body">
-                <pre>{JSON.stringify(report, null, 2)}</pre>
-              </div>
+              
+        <div className="modal-body">
+          <div className="report-grid">
+             <div className="report-item">
+              <span>file_id</span> <br />
+              <div>{report?._id}</div>
+            </div>
+             <div className="report-item">
+              <span>file_name</span> <br />
+              <div>{report?.fileName}</div>
+            </div>
+             <div className="report-item">
+              <span>file_path</span> <br />
+              <div>{report?.path}</div>
+            </div>
+             <div className="report-item">
+              <span>scan_status</span> <br />
+              <div>{report?.scanStatus}</div>
+            </div>
+             <div className="report-item">
+              <span>ScanTextSummary</span> <br />
+              <div>{report?.scanTextSummary}</div>
+            </div>
+            <div className="report-item">
+
+              <span>Risk_Score</span>
+              <span style={{ color: report?.security?.riskScore > 70 ? "red" : "green" }}>
+                <br />
+                <div>{report?.security?.riskScore}%</div>
+              </span>
+            </div>
+            <div className="report-item">
+              <span>Malware_Analysis</span> <br />
+              <div>{report?.security?.malwareRisk}</div>
+            </div>
+            <div className="report-item">
+              <span>Prompt_Injection</span> <br />
+              <div> {report?.security?.promptInjectionRisk}</div>
+            </div>
+            <div className="report-item">
+              <span>Content_Moderation</span> <br />{" "}
+              <div>{report?.security?.contentModeration}</div>
+            </div>
+            <div className="report-item">
+              <span>Risk_Label</span> <br />
+              <div>{report?.security?.riskLabel}</div>
+            </div>
+          </div>
+        </div>
             </div>
           </div>
         )}

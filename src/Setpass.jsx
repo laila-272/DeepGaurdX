@@ -2,7 +2,7 @@ import React from "react";
 import Authlayout from "./Authlayout.jsx";
 import Authcard from "./Authcard.jsx";
 import AuthHeader from "./AuthHeader.jsx";
-
+import axios from "axios";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { useNavigate } from "react-router-dom";
@@ -13,21 +13,43 @@ export default function Setpass() {
     password: "",
     confirmPassword: "",
   };
-  function setpass() {
-    navigate("/Passsuccess");
-  }
-  const login = useFormik({
-    initialValues: newpass,
-    onSubmit: setpass,
-    validationSchema: Yup.object().shape({
-      password: Yup.string()
-        .min(8, "Password must be at least 8 characters")
-        .required("Password is required"),
-      confirmPassword: Yup.string()
-        .oneOf([Yup.ref("password"), null], "Passwords must match")
-        .required("Confirm Password is required"),
-    }),
-  });
+ 
+const login = useFormik({
+  initialValues: newpass,
+  validationSchema: Yup.object({
+    password: Yup.string()
+      .min(8, "Password must be at least 8 characters")
+      .required("Password is required"),
+    confirmPassword: Yup.string()
+      .oneOf([Yup.ref("password"), null], "Passwords must match")
+      .required("Confirm Password is required"),
+  }),
+  onSubmit: async (values) => {
+    const email = localStorage.getItem("email"); // البريد المخزن من Forgot Password / OTP
+    if (!email) {
+      alert("Email not found, please restart the password reset process");
+      navigate("/forgot-password");
+      return;
+    }
+
+    try {
+      const response = await axios.patch(
+        "http://localhost:3000/users/resetPassword",
+        {
+          email,
+          password: values.password,
+          cPassword: values.confirmPassword,
+        }
+      );
+
+      alert(response.data.message || "Password updated successfully");
+      navigate("/Passsuccess"); // صفحة نجاح تغيير الباسورد
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || "Something went wrong. Please try again");
+    }
+  },
+});
 
   return (
     <Authlayout>

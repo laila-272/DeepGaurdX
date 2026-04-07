@@ -6,20 +6,38 @@ import AuthHeader from "./AuthHeader.jsx";
 import { Formik, useFormik } from "formik";
 import * as Yup from "yup";
 import { useNavigate } from "react-router-dom";
-
+import axios from "axios";
 export default function Forgotpass() {
   const navigate = useNavigate();
   let user = {
     email: "",
   };
-  function Sendcode() {
-    window.alert(
-      `Email: ${login.values.email}\nA code has been sent to your email address to reset your password.`,
+  // function Sendcode() {
+
+  //   window.alert(
+    //     `Email: ${login.values.email}\nA code has been sent to your email address to reset your password.`,
+    //   );
+    // }
+    const login = useFormik({
+    initialValues: user,
+    onSubmit: async (values) => {
+  try {
+    const response = await axios.patch("http://localhost:3000/users/forgetPassword", {
+      email: values.email,
+    });
+    localStorage.setItem("email", values.email);
+    if (response.data.message) {
+      alert(response.data.message); // OTP Sent to email
+      navigate("/PassCode"); // redirect لصفحة تغيير الباسورد
+    }
+  } catch (error) {
+    console.error(error);
+    alert(
+      error.response?.data?.message || "Something went wrong. Please try again."
     );
   }
-  const login = useFormik({
-    initialValues: user,
-    onSubmit: Sendcode,
+},
+    // onSubmit: Sendcode,
     validationSchema: Yup.object().shape({
       email: Yup.string()
         .email("Invalid email address")

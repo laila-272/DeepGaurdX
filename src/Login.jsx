@@ -40,6 +40,7 @@ export default function Login() {
         // لو الدخول ناجح
         console.log(response.data);
         window.alert("Login successful!");
+        localStorage.setItem("accessToken", response.data.accessToken);
           navigate("/home");
         // ممكن تخزن التوكن أو تعمل redirect
         // localStorage.setItem("token", response.data.token);
@@ -100,7 +101,7 @@ export default function Login() {
           <div
            className="auth-links"
           >
-            <span>forgot password?</span>
+            <span  onClick={() => navigate("/forgotpass")}>forgot password?</span>
             <span
               onClick={() => navigate("/signup")}
               style={{ cursor: "pointer", color: "#113567", fontWeight: "500" }}

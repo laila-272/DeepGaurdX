@@ -73,7 +73,29 @@ useEffect(() => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
+useEffect(() => {
+  const fetchChatHistory = async () => {
+    try {
+      const res = await fetch(`http://localhost:3000/ai/chat/${fileId}`, {
+        headers: { "Authorization": `Bearer ${accessToken}` }
+      });
+      const data = await res.json();
+      if (data.chats) {
+        // تحويل شكل الداتا من الـ Backend لشكل الـ messages في الـ Frontend
+        const history = data.chats.flatMap(c => [
+          { role: "user", content: c.question },
+          { role: "assistant", content: c.answer }
+        ]);
+        setMessages(history);
+      }
+    } catch (err) { console.error("History error:", err); }
+  };
 
+  if (fileId) {
+    fetchChatHistory();
+    handleSummarize();
+  }
+}, [fileId]);
  async function sendQuestion() {
   if (!question.trim()) return;
 
@@ -86,7 +108,7 @@ useEffect(() => {
     const res = await fetch(`http://localhost:3000/ai/ask/${fileId}`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
+       
         Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify({ question }),

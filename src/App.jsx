@@ -3,6 +3,7 @@ import { FileProvider } from "./Filecontext";
 import "./App.css";
 import Chat from "./Chat.jsx";
 import Layout from "./Layout";
+import Report from "./Report.jsx";
 import Sidebar from "./sidebar.jsx";
 // import Sidebar from "./Sidebar.jsx";
 import { createBrowserRouter } from "react-router-dom";
@@ -13,9 +14,11 @@ import Forgotpass from "./Forgotpass.jsx";
 import Setpass from "./Setpass.jsx";
 import Signup from "./Signup.jsx";
 import Code from "./Code.jsx";
+import PassCode from "./PassCode.jsx";
 import AuthLayout from "./Authlayout.jsx";
 import Passsuccess from "./Passsuccess.jsx";
 import Login from "./Login.jsx";
+// import { FileContextProvider } from "./Filecontext";
 import Updateprofile from "./Updateprofile.jsx";
 import { Navigate } from "react-router-dom";
 const router = createBrowserRouter([
@@ -45,8 +48,16 @@ const router = createBrowserRouter([
     element: <Forgotpass />,
   },
   {
+path: "/PassCode",
+element: <PassCode />,
+  },
+  {
     path: "/Set",
     element: <Setpass />,
+  },
+  {
+    path: "/Report",
+    element: <Report />,
   },
   {
     path: "/Passsuccess",

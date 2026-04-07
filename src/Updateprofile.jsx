@@ -12,28 +12,32 @@ import axios from "axios";
 
 
 export default function Updateprofile() {
- async function handleContinue() {
-  const { fullName, workspace } = login.values;
+ async function handleContinue(values) {
+  const { fullName } =values;
 
-  if (!fullName && !image) {
-    alert("Please provide your name or upload an image");
-    return;
-  }
+  // if (!fullName && !image) {
+  //   alert("Please provide your name or upload an image");
+  //   return;
+  // }
 
   const formData = new FormData();
   if (fullName) formData.append("fullName", fullName);
-  if (workspace) formData.append("workspace", workspace);
+  // if (workspace) formData.append("workspace", workspace);
   if (image) formData.append("image", image);
 
   try {
-    const token = localStorage.getItem("token"); // توكن من signup/confirmEmail
-    await axios.post("http://localhost:5000/users/updateProfile", formData, {
+    const token = localStorage.getItem("accessToken"); //
+    if (!accessToken) {
+      alert("You are not logged in");
+      return;
+    } // توكن من signup/confirmEmail
+   const res = await axios.post("http://localhost:5000/users/updateProfile", formData, {
       headers: {
-        "Content-Type": "multipart/form-data",
+        // "Content-Type": "multipart/form-data",
         Authorization: `Bearer ${token}`,
       },
     });
-
+ console.log(res.data);
     navigate("/home"); // بعد ما ينجح
   } catch (err) {
     alert(err.response?.data?.message || "Update failed");
@@ -45,7 +49,8 @@ export default function Updateprofile() {
   const navigate = useNavigate();
   let user = {
     fullName: "",
-    workspace: "",
+    // workspace: "",
+   
   };
   
   const login = useFormik({
@@ -53,7 +58,8 @@ export default function Updateprofile() {
     onSubmit: handleContinue,
     validationSchema: Yup.object().shape({
       fullName: Yup.string().required("Name is required"),
-      workspace: Yup.string().required("Workspace is required"),
+      // workspace: Yup.string().required("Workspace is required"),
+      
     }),
   });
 
@@ -80,7 +86,16 @@ export default function Updateprofile() {
             background: "#ECEBEB",
             borderRadius: "50%",
           }}
-        ></div>
+
+        >
+           {image && (
+    <img
+      src={URL.createObjectURL(image)}
+      alt="preview"
+      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+    />
+  )}
+        </div>
         <div
           onClick={() => document.getElementById("fileInput").click()}
           style={{
@@ -123,7 +138,7 @@ export default function Updateprofile() {
             </div>
           )}
 
-          <input
+          {/* <input
             name="workspace"
             value={login.values.workspace}
             onChange={login.handleChange}
@@ -132,12 +147,12 @@ export default function Updateprofile() {
 
             type="text"
             placeholder="deepGuardX.com/ name"
-          />
-          {login.touched.workspace && login.errors.workspace && (
+          /> */}
+          {/* {login.touched.workspace && login.errors.workspace && (
             <div style={{ color: "red", fontSize: "12px" }}>
               {login.errors.workspace}
             </div>
-          )}
+          )} */}
 
           <button
            

@@ -22,11 +22,11 @@ export default function Code() {
     }
 
     try {
-     const response= await axios.patch("http://localhost:3000/users/confirmEmail", {
+     const response= await axios.post("http://localhost:3000/users/confirmCode", {
         email,
         OTP,
       });
-      navigate("/updateprofile");
+      navigate("/Set");
     } catch (err) {
       alert(err.response?.data?.message || "Invalid OTP");
     }
@@ -56,7 +56,7 @@ export default function Code() {
       <Authcard  width="498px" height="345px" marginBottom="77px">
         <AuthHeader
           title="we emailed you a code"
-          subtitle={`check your inbox at ${localStorage.getItem("email")}`}
+          subtitle={`check your inbox at ${localStorage.getItem("femail")}`}
         />
         <form
           style={{

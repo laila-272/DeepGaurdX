@@ -27,14 +27,15 @@ export default function Signup() {
   async function signupfun(values) {
     setLoading(true);
     try {
-      await axios.post("http://localhost:3000/users/signUp", {
+     const response= await axios.post("http://localhost:3000/users/signUp", {
         email: values.email,
         password: values.password,
+        cPassword: values.confirmPassword,
       });
 
       // نحفظ الإيميل للـ OTP
       localStorage.setItem("email", values.email);
-
+        localStorage.setItem("accessToken", response.data.accessToken);
       navigate("/code");
     } catch (err) {
       setLoading(false);
