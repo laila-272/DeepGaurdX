@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import Drop from "./Drop";
 import { useContext } from "react";
-import { FileContext } from "./Filecontext";
+import { FileContext } from "./FileContext";
 import { NavLink } from "react-router-dom";
 import {
   Search,

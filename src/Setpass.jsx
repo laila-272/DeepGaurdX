@@ -1,6 +1,6 @@
 import React from "react";
-import Authlayout from "./Authlayout.jsx";
-import Authcard from "./Authcard.jsx";
+import Authlayout from "./AuthLayout.jsx";
+import Authcard from "./AuthCard.jsx";
 import AuthHeader from "./AuthHeader.jsx";
 import axios from "axios";
 import { useFormik } from "formik";

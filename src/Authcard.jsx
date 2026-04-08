@@ -4,7 +4,7 @@ export default function Authcard({ children, width = "400px", height = "auto" , 
   return (
     <div
       style={{
-        // background: "tomato",
+        // background: "green",
         width: width,
         height: height,
         marginTop: margintop,

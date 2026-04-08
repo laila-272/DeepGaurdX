@@ -23,108 +23,119 @@ export default function Chat() {
   const [question, setQuestion] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingSummary, setLoadingSummary] = useState(true);
-const [message, setMessage] = useState("");
+  const [message, setMessage] = useState("");
   const [summary, setSummary] = useState("");
-  const pageSize = 20;
 
   const location = useLocation();
 
-  const {  sessionId ,fileUrl , fileId} = location.state || {};
+  const { fileUrl, fileId } = location.state || {};
   const accessToken = location.state?.accessToken || "";
-const handleSummarize = async () => {
-  if (!fileId) return;
 
-  setLoadingSummary(true);
-  setMessage("");
+  //summarize
+  const handleSummarize = async () => {
+    if (!fileId) return;
 
-  try {
-    const res = await fetch(`http://localhost:3000/ai/summarize/${fileId}`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
-
-    const data = await res.json();
-
-    // السيرفر ممكن يرد بأي اسم مفتاح
-    const sum = data.summarize || data.sunnarize || data.sumary;
-
-    setSummary(sum);
-    setMessage(data.message || "Summary retrieved successfully");
-  } catch (err) {
-    console.error(err);
-    setMessage("Error summarizing file");
-  } finally {
-    setLoadingSummary(false);
-  }
-};
-useEffect(() => {
-  if (fileId) {
-    handleSummarize(); // ده هيجيب الـ summary أو يعرض اللي اتعمل قبل كده
-  }
-}, [fileId]);
-  useEffect(() => {
     setLoadingSummary(true);
-    const timer = setTimeout(() => setLoadingSummary(false), 4000); // fake 5s delay
-    return () => clearTimeout(timer);
-  }, []);
+    setMessage("");
+
+    try {
+      const res = await fetch(`http://localhost:3000/ai/summarize/${fileId}`, {
+        method: "POST",
+        headers: {
+          Authorization: `bearer ${accessToken}`,
+        },
+      });
+      if (!res.ok) {
+        throw new Error("Server error");
+      }
+      const data = await res.json();
+
+      // السيرفر ممكن يرد بأي اسم مفتاح
+      const sum = data.summarize || data.summary;
+
+      setSummary(sum || "No summary available.");
+      setMessage(data.message || "Summary retrieved successfully");
+    } catch (err) {
+      console.error(err);
+      setMessage("Error summarizing file");
+    } finally {
+      setLoadingSummary(false);
+    }
+  };
+
+  // ask question
+  async function sendQuestion() {
+    if (!question.trim()) return;
+
+    const userMessage = { role: "user", content: question };
+    setMessages((prev) => [...prev, userMessage]);
+    const currentQuestion = question;
+    setQuestion("");
+    setLoading(true);
+
+    try {
+      const res = await fetch(`http://localhost:3000/ai/ask/${fileId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ question: currentQuestion }),
+      });
+      if (!res.ok) {
+        throw new Error("Server error");
+      }
+      const data = await res.json();
+
+      const assistantMessage = {
+        role: "assistant",
+        content: data.answer || "No answer found",
+      };
+      setMessages((prev) => [...prev, assistantMessage]);
+    } catch (err) {
+      console.error(err);
+
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: "Error retrieving answer" },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  //get chat history
+  const fetchChatHistory = async () => {
+    if (!fileId) return;
+    try {
+      const res = await fetch(`http://localhost:3000/ai/chat/${fileId}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (!res.ok) {
+        throw new Error("Server error");
+      }
+      const data = await res.json();
+      if (data.chats) {
+        const history = data.chats.flatMap((c) => [
+          { role: "user", content: c.question },
+          { role: "assistant", content: c.answer },
+        ]);
+        setMessages(history);
+      }
+    } catch (err) {
+      console.error("History error:", err);
+    }
+  };
+  useEffect(() => {
+    if (fileId && accessToken) {
+      handleSummarize();
+      fetchChatHistory();
+    }
+  }, [fileId, accessToken]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
-useEffect(() => {
-  const fetchChatHistory = async () => {
-    try {
-      const res = await fetch(`http://localhost:3000/ai/chat/${fileId}`, {
-        headers: { "Authorization": `Bearer ${accessToken}` }
-      });
-      const data = await res.json();
-      if (data.chats) {
-        // تحويل شكل الداتا من الـ Backend لشكل الـ messages في الـ Frontend
-        const history = data.chats.flatMap(c => [
-          { role: "user", content: c.question },
-          { role: "assistant", content: c.answer }
-        ]);
-        setMessages(history);
-      }
-    } catch (err) { console.error("History error:", err); }
-  };
-
-  if (fileId) {
-    fetchChatHistory();
-    handleSummarize();
-  }
-}, [fileId]);
- async function sendQuestion() {
-  if (!question.trim()) return;
-
-  const userMessage = { role: "user", content: question };
-  setMessages(prev => [...prev, userMessage]);
-  setQuestion("");
-  setLoading(true);
-
-  try {
-    const res = await fetch(`http://localhost:3000/ai/ask/${fileId}`, {
-      method: "POST",
-      headers: {
-       
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify({ question }),
-    });
-
-    const data = await res.json();
-
-    const assistantMessage = { role: "assistant", content: data.answer || "No answer found" };
-    setMessages(prev => [...prev, assistantMessage]);
-  } catch (err) {
-    console.error(err);
-    setMessages(prev => [...prev, { role: "assistant", content: "Error retrieving answer" }]);
-  } finally {
-    setLoading(false);
-  }
-}
 
   return (
     <div className="chat">
@@ -163,7 +174,7 @@ useEffect(() => {
         <span>file name</span>
         <div className="closefile" onClick={() => setFileOpen((prev) => !prev)}>
           {" "}
-          {fileOpen?<PanelLeft size={20} />:<PanelRight size={20} />}
+          {fileOpen ? <PanelLeft size={20} /> : <PanelRight size={20} />}
         </div>
       </div>
 
@@ -248,8 +259,7 @@ useEffect(() => {
           </div>
         </div>
         {fileOpen && (
-          <div   style={{ background:"tomato" }}className="thefile">
-           
+          <div style={{ background: "tomato" }} className="thefile">
             {/* <div className="pagination">
               <button
                 onClick={() => setCurrentPage((p) => p - 1)}
@@ -269,22 +279,18 @@ useEffect(() => {
                 <ChevronRight size={17} />
               </button>
             </div> */}
-            <div  style={{ background:"tomato" }} className="showfile">
-  {fileUrl ? (
-  <iframe
-    src={fileUrl}
-    width="100%"
-    height="100%"
-    style={{ border: "none" ,background:"green" }}
-  />
-) : (
-  <span>No file loaded</span>
-)}
-              <div  className="filename"></div>
-            
-               
-                 
-                
+            <div style={{ background: "tomato" }} className="showfile">
+              {fileUrl ? (
+                <iframe
+                  src={fileUrl}
+                  width="100%"
+                  height="100%"
+                  style={{ border: "none", background: "green" }}
+                />
+              ) : (
+                <span>No file loaded</span>
+              )}
+              <div className="filename"></div>
             </div>
           </div>
         )}

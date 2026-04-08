@@ -1,6 +1,6 @@
 import React from "react";
 import img from "./assets/Group9.jpg";
-import AuthLayout from "./Authlayout";
+import AuthLayout from "./AuthLayout";
 import e2 from "./assets/e2.png";
 import e1 from "./assets/e1.png";
 import { Formik, useFormik } from "formik";
@@ -9,7 +9,7 @@ import axios from "axios";
 
 import AuthHeader from "./AuthHeader";
 import { useNavigate } from "react-router-dom";
-import Authcard from "./Authcard";
+import Authcard from "./AuthCard";
 // [7:56 pm, 27/03/2026] Sara Arafa: /^(?=.[A-Za-z])(?=.\d)[A-Za-z\d]{8,}$/
 // [7:56 pm, 27/03/2026] Sara Arafa: regex password
 import AuthForm from './AuthForm';
@@ -18,9 +18,10 @@ export default function Signup() {
 
   let user = {
     email: "",
+    name: "",
     password: "",
     confirmPassword: "",
-    code: "",
+   
   };
   const [loading, setLoading] = React.useState(false);
 
@@ -29,6 +30,7 @@ export default function Signup() {
     try {
      const response= await axios.post("http://localhost:3000/users/signUp", {
         email: values.email,
+        userName: values.name,
         password: values.password,
         cPassword: values.confirmPassword,
       });
@@ -46,6 +48,10 @@ export default function Signup() {
     initialValues: user,
     onSubmit: signupfun,
     validationSchema: Yup.object().shape({
+      name: Yup.string()
+        .min(3, "Name must be at least 3 characters")
+       
+        .required("Name is required"),
       email: Yup.string()
         .email("Invalid email address")
         .required("Email is required"),
@@ -63,7 +69,7 @@ export default function Signup() {
 
   return (
     <AuthLayout>
-      <Authcard width="531px" height="436px">
+      <Authcard width="531px" height="484px "margintop="140px">
         <AuthHeader
           title="Create a workspace"
           subtitle={
@@ -78,7 +84,7 @@ export default function Signup() {
           onSubmit={signup.handleSubmit}
           style={{
             width: "297px",
-            height: "246px",
+            height: "300px",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
@@ -98,6 +104,20 @@ export default function Signup() {
           {signup.touched.email && signup.errors.email && (
             <div style={{ color: "red", fontSize: "12px" }}>
               {signup.errors.email}
+            </div>
+          )}
+          <input
+            name="name"
+            value={signup.values.name}
+            onChange={signup.handleChange}
+            onBlur={signup.handleBlur}
+            className="auth-input"
+            type="text"
+            placeholder="user name"
+          />
+          {signup.touched.name && signup.errors.name && (
+            <div style={{ color: "red", fontSize: "12px" }}>
+              {signup.errors.name}
             </div>
           )}
           <input

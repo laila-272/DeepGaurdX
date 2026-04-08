@@ -3,8 +3,8 @@ import img from "./assets/Group9.jpg";
 import bg1 from "./assets/bg1.png";
 import { useNavigate } from "react-router-dom";
 import { Check } from "lucide-react";
-import Authlayout from "./Authlayout.jsx";
-import Authcard from "./Authcard.jsx";
+import Authlayout from "./AuthLayout.jsx";
+import Authcard from "./AuthCard.jsx";
 import AuthHeader from "./AuthHeader.jsx";
 export default function Success() {
   const navigate = useNavigate();

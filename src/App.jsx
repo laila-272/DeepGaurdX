@@ -1,25 +1,21 @@
 import { useState } from "react";
-import { FileProvider } from "./Filecontext";
+import { FileProvider } from "./FileContext.jsx";
 import "./App.css";
 import Chat from "./Chat.jsx";
 import Layout from "./Layout";
-import Report from "./Report.jsx";
-import Sidebar from "./sidebar.jsx";
-// import Sidebar from "./Sidebar.jsx";
+import SideBar from "./SideBar.jsx";
 import { createBrowserRouter } from "react-router-dom";
 import { RouterProvider } from "react-router";
 import Home from "./Home.jsx";
-import Forgotpass from "./Forgotpass.jsx";
-// import Library from "./Library.jsx";
-import Setpass from "./Setpass.jsx";
-import Signup from "./Signup.jsx";
+import ForgotPass from "./ForgotPass.jsx";
+import SetPass from "./SetPass.jsx";
+import SignUp from "./SignUp.jsx";
 import Code from "./Code.jsx";
 import PassCode from "./PassCode.jsx";
-import AuthLayout from "./Authlayout.jsx";
-import Passsuccess from "./Passsuccess.jsx";
+import AuthLayout from "./AuthLayout.jsx";
+import PassSuccess from "./PassSuccess.jsx";
 import Login from "./Login.jsx";
-// import { FileContextProvider } from "./Filecontext";
-import Updateprofile from "./Updateprofile.jsx";
+import UpdateProfile from "./UpdateProfile.jsx";
 import { Navigate } from "react-router-dom";
 const router = createBrowserRouter([
   {
@@ -29,7 +25,7 @@ const router = createBrowserRouter([
 
   {
     path: "/signup",
-    element: <Signup />,
+    element: <SignUp />,
   },
   {
     path: "/login",
@@ -39,35 +35,31 @@ const router = createBrowserRouter([
     path: "/Code",
     element: <Code />,
   },
-  {
-    path: "/Updateprofile",
-    element: <Updateprofile />,
-  },
+  // {
+  //   path: "/Updateprofile",
+  //   element: <UpdateProfile />,
+  // },
   {
     path: "/Forgotpass",
-    element: <Forgotpass />,
+    element: <ForgotPass />,
   },
   {
-path: "/PassCode",
-element: <PassCode />,
+    path: "/PassCode",
+    element: <PassCode />,
   },
   {
     path: "/Set",
-    element: <Setpass />,
+    element: <SetPass />,
   },
-  {
-    path: "/Report",
-    element: <Report />,
-  },
+
   {
     path: "/Passsuccess",
-    element: <Passsuccess />,
+    element: <PassSuccess />,
   },
 
   {
     path: "/Auth",
     element: <AuthLayout />,
-    
   },
   {
     path: "",

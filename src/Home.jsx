@@ -4,7 +4,7 @@ import { AlignCenter, PanelLeft, CircleX } from "lucide-react";
 import Lottie from "lottie-react";
 import water from "./assets/water.json";
 import { useContext } from "react";
-import { FileContext } from "./Filecontext";
+import { FileContext } from "./FileContext";
 import {
   CloudUpload,
   FileUp,

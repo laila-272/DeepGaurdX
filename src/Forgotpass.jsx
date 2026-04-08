@@ -1,7 +1,7 @@
 import React from "react";
 import img from "./assets/Group9.jpg";
-import Authlayout from "./Authlayout.jsx";
-import Authcard from "./Authcard.jsx";
+import Authlayout from "./AuthLayout.jsx";
+import Authcard from "./AuthCard.jsx";
 import AuthHeader from "./AuthHeader.jsx";
 import { Formik, useFormik } from "formik";
 import * as Yup from "yup";

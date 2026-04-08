@@ -1,7 +1,7 @@
 
 
-import Authlayout from "./Authlayout.jsx";
-import Authcard from "./Authcard.jsx";
+import Authlayout from "./AuthLayout.jsx";
+import Authcard from "./AuthCard.jsx";
 import AuthHeader from "./AuthHeader.jsx";
 import { useNavigate } from "react-router-dom";
 import { useRef, useState } from "react";
@@ -26,7 +26,7 @@ export default function Code() {
         email,
         OTP,
       });
-      navigate("/updateprofile");
+      navigate("/home");
     } catch (err) {
       alert(err.response?.data?.message || "Invalid OTP");
     }
