@@ -8,6 +8,7 @@ import {
   PanelLeft,
   ArrowUp,
   Plus,
+    Brain, CheckCircle , Sparkle
 } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { ClipLoader } from "react-spinners";
@@ -22,12 +23,13 @@ export default function Chat() {
   const [messages, setMessages] = useState([]);
   const [question, setQuestion] = useState("");
   const [loading, setLoading] = useState(false);
-  const [loadingSummary, setLoadingSummary] = useState(true);
+  const [loadingSummary, setLoadingSummary] = useState(false);
   const [message, setMessage] = useState("");
-  const [summary, setSummary] = useState("");
-
+  const [summary, setSummary] = useState(null);
+  const [loadingStep, setLoadingStep] = useState("");
+const [thinkingStep, setThinkingStep] = useState("");
   const location = useLocation();
-
+  const [summaryError, setSummaryError] = useState(false);
   const { fileUrl, fileId } = location.state || {};
   const accessToken = location.state?.accessToken || "";
 
@@ -51,10 +53,10 @@ export default function Chat() {
       const data = await res.json();
 
       // السيرفر ممكن يرد بأي اسم مفتاح
-      const sum = data.summarize || data.summary;
+      const sum = data.summary;
 
       setSummary(sum || "No summary available.");
-      setMessage(data.message || "Summary retrieved successfully");
+      setMessage(data.message || "");
     } catch (err) {
       console.error(err);
       setMessage("Error summarizing file");
@@ -64,52 +66,103 @@ export default function Chat() {
   };
 
   // ask question
-  async function sendQuestion() {
-    if (!question.trim()) return;
+async function sendQuestion() {
+  if (!question.trim()) return;
 
-    const userMessage = { role: "user", content: question };
-    setMessages((prev) => [...prev, userMessage]);
-    const currentQuestion = question;
-    setQuestion("");
-    setLoading(true);
+  setMessages((prev) => [...prev, { role: "user", content: question }]);
 
-    try {
-      const res = await fetch(`http://localhost:3000/ai/ask/${fileId}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({ question: currentQuestion }),
-      });
-      if (!res.ok) {
-        throw new Error("Server error");
-      }
-      const data = await res.json();
+  const currentQuestion = question;
+  setQuestion("");
 
-      const assistantMessage = {
-        role: "assistant",
-        content: data.answer || "No answer found",
-      };
-      setMessages((prev) => [...prev, assistantMessage]);
-    } catch (err) {
-      console.error(err);
+  setLoading(true);
 
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: "Error retrieving answer" },
-      ]);
-    } finally {
-      setLoading(false);
-    }
+  try {
+    // ثابتة
+    setLoadingStep("Reading the file");
+
+    await new Promise((r) => setTimeout(r, 700));
+
+    // المتغيرة
+    setThinkingStep("Thinking...");
+
+    const res = await fetch(`http://localhost:3000/ai/ask/${fileId}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `bearer ${accessToken}`,
+      },
+      body: JSON.stringify({ question: currentQuestion }),
+    });
+
+    const data = await res.json();
+
+    // التحويل هنا
+    setThinkingStep("Finished thinking...");
+
+    await new Promise((r) => setTimeout(r, 500));
+
+    setMessages((prev) => [
+      ...prev,
+      { role: "assistant", content: data.answer || "No answer found" },
+    ]);
+
+  } catch (err) {
+    setMessages((prev) => [
+      ...prev,
+      { role: "assistant", content: "Error retrieving answer" },
+    ]);
+  } finally {
+    setLoading(false);
+    setLoadingStep("");
+    setThinkingStep("");
   }
+}
+  // async function sendQuestion() {
+  //   if (!question.trim()) return;
+
+  //   const userMessage = { role: "user", content: question };
+  //   setMessages((prev) => [...prev, userMessage]);
+  //   const currentQuestion = question;
+  //   setQuestion("");
+  //   setLoading(true);
+
+  //   try {
+  //     const res = await fetch(`http://localhost:3000/ai/ask/${fileId}`, {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         Authorization: `bearer ${accessToken}`,
+  //       },
+  //       body: JSON.stringify({ question: currentQuestion }),
+  //     });
+  //     if (!res.ok) {
+  //       throw new Error("Server error");
+  //     }
+  //     const data = await res.json();
+
+  //     const assistantMessage = {
+  //       role: "assistant",
+  //       content: data.answer || "No answer found",
+  //     };
+  //     setMessages((prev) => [...prev, assistantMessage]);
+  //   } catch (err) {
+  //     console.error(err);
+
+  //     setMessages((prev) => [
+  //       ...prev,
+  //       { role: "assistant", content: "Error retrieving answer" },
+  //     ]);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // }
 
   //get chat history
   const fetchChatHistory = async () => {
     if (!fileId) return;
     try {
       const res = await fetch(`http://localhost:3000/ai/chat/${fileId}`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
+        headers: { Authorization: `bearer ${accessToken}` },
       });
       if (!res.ok) {
         throw new Error("Server error");
@@ -126,17 +179,36 @@ export default function Chat() {
       console.error("History error:", err);
     }
   };
-  useEffect(() => {
-    if (fileId && accessToken) {
-      handleSummarize();
-      fetchChatHistory();
-    }
-  }, [fileId, accessToken]);
+  const hasFetched = useRef({});
 
+  useEffect(() => {
+    if (!fileId || !accessToken) return;
+    if (hasFetched.current[fileId]) return;
+
+    hasFetched.current[fileId] = true;
+
+    handleSummarize();
+    fetchChatHistory();
+  }, [fileId, accessToken]);
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
+  if (loadingSummary) {
+    return (
+      <div className="full-loader">
+        <ClipLoader size={50} />
+      </div>
+    );
+  }
+
+  if (summaryError) {
+    return (
+      <div className="full-loader">
+        <p>Failed to load summary </p>
+      </div>
+    );
+  }
   return (
     <div className="chat">
       <input
@@ -185,11 +257,8 @@ export default function Chat() {
             {/* summary جوه الـ scroll */}
             <div className="summary">
               <div className="sumtitle">Summary</div>
-              <div className="sumcontent">
-                {summary ? summary : "No summary available yet."}
-              </div>
+              <div className="sumcontent">{summary}</div>
             </div>
-
             {/* الرسائل */}
             {messages.map((msg, index) => (
               <div key={index} className={`message ${msg.role}`}>
@@ -213,8 +282,25 @@ export default function Chat() {
                   )}
               </div>
             ))}
+         {loading && (
+  <div className="message assistant loading-box">
+    
+    <div className="step">
+      <FileText size={16} />
+      <span>{loadingStep}</span>
+    </div>
 
-            {loading && <div className="message assistant">Typing...</div>}
+    <div className="step">
+      {thinkingStep === "Finished thinking..." ? (
+        < Sparkle size={20} />
+      ) : (
+        <Brain size={16} />
+      )}
+      <span>{thinkingStep}</span>
+    </div>
+
+  </div>
+)}
             <div ref={messagesEndRef} />
           </div>
           <div className="textbox">

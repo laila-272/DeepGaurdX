@@ -18,7 +18,7 @@ export default function Signup() {
 
   let user = {
     email: "",
-    name: "",
+    userName: "",
     password: "",
     confirmPassword: "",
    
@@ -30,11 +30,18 @@ export default function Signup() {
     try {
      const response= await axios.post("http://localhost:3000/users/signUp", {
         email: values.email,
-        userName: values.name,
+        userName: values.userName,
         password: values.password,
         cPassword: values.confirmPassword,
       });
-
+console.log({
+  email: values.email,
+  userName: values.userName,
+  password: values.password,
+  cPassword: values.confirmPassword,
+});
+console.log(response.data);
+console.log(values);
       // نحفظ الإيميل للـ OTP
       localStorage.setItem("email", values.email);
         localStorage.setItem("accessToken", response.data.accessToken);
@@ -48,8 +55,8 @@ export default function Signup() {
     initialValues: user,
     onSubmit: signupfun,
     validationSchema: Yup.object().shape({
-      name: Yup.string()
-        .min(3, "Name must be at least 3 characters")
+      userName: Yup.string().trim()
+        .min(3, "Name must be at least 3 characters").max(30, "Name must be at most 30 characters")
        
         .required("Name is required"),
       email: Yup.string()
@@ -107,17 +114,17 @@ export default function Signup() {
             </div>
           )}
           <input
-            name="name"
-            value={signup.values.name}
+            name="userName"
+            value={signup.values.userName}
             onChange={signup.handleChange}
             onBlur={signup.handleBlur}
             className="auth-input"
             type="text"
             placeholder="user name"
           />
-          {signup.touched.name && signup.errors.name && (
+          {signup.touched.userName && signup.errors.userName && (
             <div style={{ color: "red", fontSize: "12px" }}>
-              {signup.errors.name}
+              {signup.errors.userName}
             </div>
           )}
           <input
