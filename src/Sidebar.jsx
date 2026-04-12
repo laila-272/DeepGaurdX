@@ -200,7 +200,7 @@ export default function Sidebar() {
               className={`username ${open ? "active" : ""}`}
               onClick={() => setOpen(!open)}
             >
-              <div> {user.userName|| user?.email?.split("@")[0]}</div>
+              <div> {user?.userName|| user?.email?.split("@")[0]}</div>
               <div>
                 {open ? <ChevronDown size={17} /> : <ChevronRight size={17} />}
               </div>

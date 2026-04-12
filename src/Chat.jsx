@@ -345,7 +345,7 @@ async function sendQuestion() {
           </div>
         </div>
         {fileOpen && (
-          <div style={{ background: "tomato" }} className="thefile">
+          <div className="thefile">
             {/* <div className="pagination">
               <button
                 onClick={() => setCurrentPage((p) => p - 1)}
@@ -365,7 +365,7 @@ async function sendQuestion() {
                 <ChevronRight size={17} />
               </button>
             </div> */}
-            <div style={{ background: "tomato" }} className="showfile">
+            <div  className="showfile">
               {fileUrl ? (
                 <iframe
                   src={fileUrl}
