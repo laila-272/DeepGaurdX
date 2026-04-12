@@ -14,6 +14,9 @@ import {
   Upload,
   ShieldCheck,
   ShieldAlert,
+  ChevronRight,
+  ChevronLeft,
+  FileText
 } from "lucide-react";
 import { DragTextContext } from "./DragTextContext";
 
@@ -23,7 +26,7 @@ export default function Home() {
   const [scanned, setscanned] = useState(false);
   const { dragtext, setDragtext } = useContext(DragTextContext);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
-const [categories, setCategories] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isSafe, setisSafe] = useState(null);
   const [riskLevel, setRiskLevel] = useState(null);
@@ -31,15 +34,57 @@ const [categories, setCategories] = useState([]);
   const [showReport, setShowReport] = useState(false);
   const { files = [], setFiles } = useContext(FileContext);
   const accessToken = localStorage.getItem("accessToken");
+  const [recentFiles, setRecentFiles] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6;
+  const indexOfLast = currentPage * itemsPerPage;
+  const indexOfFirst = indexOfLast - itemsPerPage;
 
+  const currentFiles = recentFiles.slice(indexOfFirst, indexOfLast);
+  const totalPages = Math.ceil(recentFiles.length / itemsPerPage);
+
+  function timeAgo(date) {
+  const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+
+  const intervals = [
+    { label: "y", seconds: 31536000 },
+    { label: "mo", seconds: 2592000 },
+    { label: "d", seconds: 86400 },
+    { label: "h", seconds: 3600 },
+    { label: "m", seconds: 60 },
+  ];
+
+  for (let i of intervals) {
+    const count = Math.floor(seconds / i.seconds);
+    if (count > 0) {
+      return `${count}${i.label} ago`;
+    }
+  }
+
+  return "just now";
+}
+  useEffect(() => {
+    async function fetchRecent() {
+      try {
+        const res = await fetch("http://localhost:3000/upload/recent", {
+          headers: { Authorization: `bearer ${accessToken}` },
+        });
+        const data = await res.json();
+        if (data.files) setRecentFiles(data.files);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    fetchRecent();
+  }, []);
   useEffect(() => {
     setDragtext("Drag & drop your files here or click to browse");
-  setscanned(false);
-  setisSafe(null);
-  setReport(null);
-  setRiskLevel(null);
-  setFiles([]);
-}, []);
+    setscanned(false);
+    setisSafe(null);
+    setReport(null);
+    setRiskLevel(null);
+    setFiles([]);
+  }, []);
   //uploading file
   async function uploadFile(file) {
     setDragtext("Uploading file...");
@@ -90,106 +135,104 @@ const [categories, setCategories] = useState([]);
 
   //scanning file
   function handleScan(e) {
-  e.stopPropagation();
-  if (!files?.length) return;
-  if (!files?.length || loading || scanned) return;
+    e.stopPropagation();
+    if (!files?.length) return;
+    if (!files?.length || loading || scanned) return;
 
-  // بدل ما يبدأ الفحص مباشرة، نفتح مودال الكاتيجوري
-  setShowCategoryModal(true);
-}
-async function startScan() {
-  if (!files?.length) return;
-  setLoading(true);
-  setscanned(false);
-
-  try {
-    const currentFile = files[files.length - 1];
-    const fileId = currentFile?._id;
-    const res = await fetch(`http://localhost:3000/security/scan/${fileId}`, {
-      method: "POST",
-      headers: {
-        Authorization: `bearer ${accessToken}`,
-      },
-    });
-    const data = await res.json();
-
-    setisSafe(data.fileIsSafe);
-    setReport(data.updatedFile);
-    setRiskLevel(data.updatedFile.security.riskLevel);
-    setscanned(true);
-    setDragtext("Scan completed");
-  } catch (err) {
-    console.error(err);
-  } finally {
-    setLoading(false);
+    // بدل ما يبدأ الفحص مباشرة، نفتح مودال الكاتيجوري
+    setShowCategoryModal(true);
   }
-}
-const handleNewScan = () => {
-  if (inputRef.current) {
-   
+  async function startScan() {
+    if (!files?.length) return;
+    setLoading(true);
+    setscanned(false);
 
-    // إعادة تهيئة input
-    inputRef.current.value = null;
+    try {
+      const currentFile = files[files.length - 1];
+      const fileId = currentFile?._id;
+      const res = await fetch(`http://localhost:3000/security/scan/${fileId}`, {
+        method: "POST",
+        headers: {
+          Authorization: `bearer ${accessToken}`,
+        },
+      });
+      const data = await res.json();
 
-    // listener للملف الجديد
-    const handleFileSelected = async (e) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
+      setisSafe(data.fileIsSafe);
+      setReport(data.updatedFile);
+      setRiskLevel(data.updatedFile.security.riskLevel);
+      setscanned(true);
+      setDragtext("Scan completed");
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }
+  const handleNewScan = () => {
+    if (inputRef.current) {
+      // إعادة تهيئة input
+      inputRef.current.value = null;
 
-      setLoading(true);
-      setDragtext("Uploading file...");
+      // listener للملف الجديد
+      const handleFileSelected = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
 
-      try {
-        // رفع الملف
-        const formData = new FormData();
-        formData.append("file", file);
-        const res = await fetch("http://localhost:3000/upload/", {
-          method: "POST",
-          body: formData,
-          headers: {
-            Authorization: `bearer ${accessToken}`,
-          },
-        });
-        const data = await res.json();
+        setLoading(true);
+        setDragtext("Uploading file...");
 
-        const newFile = {
-          _id: data.pdf._id,
-          name: file.name,
-          originalFile: file,
-        };
-
-        setFiles([newFile]); // نخليها ملف واحد فقط
-        setDragtext("File uploaded, scanning...");
-
-        // عمل scan مباشر
-        const scanRes = await fetch(
-          `http://localhost:3000/security/scan/${data.pdf._id}`,
-          {
+        try {
+          // رفع الملف
+          const formData = new FormData();
+          formData.append("file", file);
+          const res = await fetch("http://localhost:3000/upload/", {
             method: "POST",
-            headers: { Authorization: `bearer ${accessToken}` },
-          }
-        );
-        const scanData = await scanRes.json();
+            body: formData,
+            headers: {
+              Authorization: `bearer ${accessToken}`,
+            },
+          });
+          const data = await res.json();
 
-        setisSafe(scanData.fileIsSafe);
-        setReport(scanData.updatedFile);
-        setRiskLevel(scanData.updatedFile.security.riskLevel);
-        setscanned(true);
-        setDragtext("Scan completed");
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-        // إزالة الـ listener بعد انتهاء المهمة
-        inputRef.current.removeEventListener("change", handleFileSelected);
-      }
-    };
+          const newFile = {
+            _id: data.pdf._id,
+            name: file.name,
+            originalFile: file,
+          };
 
-    // إضافة listener قبل فتح نافذة اختيار الملف
-    inputRef.current.addEventListener("change", handleFileSelected);
-    inputRef.current.click();
-  }
-};
+          setFiles([newFile]); // نخليها ملف واحد فقط
+          setDragtext("File uploaded, scanning...");
+
+          // عمل scan مباشر
+          const scanRes = await fetch(
+            `http://localhost:3000/security/scan/${data.pdf._id}`,
+            {
+              method: "POST",
+              headers: { Authorization: `bearer ${accessToken}` },
+            },
+          );
+          const scanData = await scanRes.json();
+
+          setisSafe(scanData.fileIsSafe);
+          setReport(scanData.updatedFile);
+          setRiskLevel(scanData.updatedFile.security.riskLevel);
+          setscanned(true);
+          setDragtext("Scan completed");
+        } catch (err) {
+          console.error(err);
+        } finally {
+          setLoading(false);
+          // إزالة الـ listener بعد انتهاء المهمة
+          inputRef.current.removeEventListener("change", handleFileSelected);
+        }
+      };
+
+      // إضافة listener قبل فتح نافذة اختيار الملف
+      inputRef.current.addEventListener("change", handleFileSelected);
+      inputRef.current.click();
+    }
+  };
   const handleCancel = (e) => {
     e.stopPropagation();
 
@@ -239,38 +282,38 @@ const handleNewScan = () => {
     e.preventDefault();
     setDragtext("Drop your file here");
   }
-useEffect(() => {
-  async function fetchCategories() {
-    try {
-      const res = await fetch("http://localhost:3000/upload/categories", {
-        headers: {
-          Authorization: `bearer ${accessToken}`,
-        },
-      });
-      const data = await res.json();
-setCategories(data.categories || []);console.log("API RESPONSE:", data);        } catch (err) {
-      console.error(err);
+  useEffect(() => {
+    async function fetchCategories() {
+      try {
+        const res = await fetch("http://localhost:3000/upload/categories", {
+          headers: {
+            Authorization: `bearer ${accessToken}`,
+          },
+        });
+        const data = await res.json();
+        setCategories(data.categories || []);
+        console.log("API RESPONSE:", data);
+      } catch (err) {
+        console.error(err);
+      }
     }
-  }
 
-  fetchCategories();
-}, []);
+    fetchCategories();
+  }, []);
   return (
-    
     <div className="homecom">
-    {showCategoryModal && (
-  <CreateCategoryModal
-    categories={categories}   // 👈 IMPORTANT
-
-    file={files[files.length - 1]}   // 👈 مهم جدًا
-    accessToken={accessToken}        // 👈 مهم جدًا
-    onClose={() => setShowCategoryModal(false)}
-    onSave={() => {
-      setShowCategoryModal(false);
-      startScan(); // دالة جديدة تبدأ الفحص فعليًا بعد اختيار الكاتيجوري
-    }}
-  />
-)}
+      {showCategoryModal && (
+        <CreateCategoryModal
+          categories={categories} // 👈 IMPORTANT
+          file={files[files.length - 1]} // 👈 مهم جدًا
+          accessToken={accessToken} // 👈 مهم جدًا
+          onClose={() => setShowCategoryModal(false)}
+          onSave={() => {
+            setShowCategoryModal(false);
+            startScan(); // دالة جديدة تبدأ الفحص فعليًا بعد اختيار الكاتيجوري
+          }}
+        />
+      )}
       <div className="title">
         <PanelLeft size={20} />
         <span>Home</span>
@@ -377,7 +420,7 @@ setCategories(data.categories || []);console.log("API RESPONSE:", data);        
                 <p>Scanning...</p>
               </div>
             )} */}
-{loading && <span className="loader"></span>}
+            {loading && <span className="loader"></span>}
             {/* قبل اختيار أي ملف */}
             {!scanned && !loading && files.length === 0 && (
               <>
@@ -410,7 +453,6 @@ setCategories(data.categories || []);console.log("API RESPONSE:", data);        
 
             {/* بعد الـ scan */}
             {scanned && !loading && (
-              
               <div className="d-flex flex-column align-items-center gap-3">
                 <div className="d-flex gap-3">
                   <button className=" another-scan-btn" onClick={handleNewScan}>
@@ -428,7 +470,6 @@ setCategories(data.categories || []);console.log("API RESPONSE:", data);        
             )}
           </div>
         </div>
-
         {scanned && riskLevel && (
           <div
             style={{
@@ -558,6 +599,60 @@ setCategories(data.categories || []);console.log("API RESPONSE:", data);        
             handleChange(e);
           }}
         />
+        {!scanned && !loading && files.length === 0 && (
+        <div className="recent-content">
+          <div className="header">
+            <span>recent</span>
+            <div className="buttons">
+              <button
+                className="scroll-btn left"
+                onClick={() => {
+                  document.getElementById("recentRow").scrollBy({
+                    left: -300,
+                    behavior: "smooth",
+                  });
+                }}
+              >
+                <ChevronLeft />
+              </button>
+              <button
+                className="scroll-btn right"
+                onClick={() => {
+                  document.getElementById("recentRow").scrollBy({
+                    left: 300,
+                    behavior: "smooth",
+                  });
+                }}
+              >
+                <ChevronRight />
+              </button>
+            </div>
+          </div>
+
+          <div className="recent-slider" id="recentRow">
+            {recentFiles.map((file) => (
+              <div
+                key={file._id}
+                className="recent-item-home"
+                onClick={() => {
+                  if (file.url) {
+                    navigate("/Chat", {
+                      state: {
+                        fileUrl: file.url,
+                        fileId: file._id,
+                        accessToken,
+                      },
+                    });
+                  }
+                }}
+              >
+                <FileText size={18}/>
+                <div className="createdAt"><div> {file.fileName}</div>
+               <div className="time">{timeAgo(file.createdAt)}</div></div>
+              </div>
+            ))}
+          </div>
+        </div>)}
       </div>
     </div>
   );
