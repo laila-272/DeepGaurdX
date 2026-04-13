@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { FileProvider } from "./FileContext.jsx";
-import "./categories.css"
+import "./Categories.css"
 import "./App.css";
 import Search from "./Search.jsx";
 import Chat from "./Chat.jsx";

@@ -45,31 +45,41 @@ export default function Sidebar() {
     setAddingCategoryModal(true);
   }
 
-  
   useEffect(() => {
-    async function fetchGeneralFiles() {
-      try {
-        const res = await fetch(
-          `http://localhost:3000/upload/files/${GENERAL_CATEGORY_ID}`,
-          {
-            headers: {
-              Authorization: `bearer ${accessToken}`,
-            },
-          },
-        );
+    const handleClickOutside = (e) => {
+  if (!e.target.closest(".file-menu")) {
+    setMenuOpenIndex(null);}    };
 
-        const data = await res.json();
+    document.addEventListener("mousedown", handleClickOutside);
 
-        if (data.filesWithUrls) {
-          setGeneralFiles(data.filesWithUrls);
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
-    fetchGeneralFiles();
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, []);
+  // useEffect(() => {
+  //   async function fetchGeneralFiles() {
+  //     try {
+  //       const res = await fetch(
+  //         `http://localhost:3000/upload/files/${GENERAL_CATEGORY_ID}`,
+  //         {
+  //           headers: {
+  //             Authorization: `bearer ${accessToken}`,
+  //           },
+  //         },
+  //       );
+
+  //       const data = await res.json();
+
+  //       if (data.filesWithUrls) {
+  //         setGeneralFiles(data.filesWithUrls);
+  //       }
+  //     } catch (err) {
+  //       console.error(err);
+  //     }
+  //   }
+
+  //   fetchGeneralFiles();
+  // }, []);
   async function handleLogout() {
     const token = localStorage.getItem("accessToken");
 
@@ -200,7 +210,7 @@ export default function Sidebar() {
               className={`username ${open ? "active" : ""}`}
               onClick={() => setOpen(!open)}
             >
-              <div> {user?.userName|| user?.email?.split("@")[0]}</div>
+              <div> {user?.userName || user?.email?.split("@")[0]}</div>
               <div>
                 {open ? <ChevronDown size={17} /> : <ChevronRight size={17} />}
               </div>
@@ -302,9 +312,18 @@ export default function Sidebar() {
                           style={{ position: "relative", cursor: "pointer" }}
                           onMouseEnter={() => setActiveFileIndex(index)}
                           onMouseLeave={() => setActiveFileIndex(null)}
-                          onClick={() =>
-                            setMenuOpenIndex(menuOpen ? null : index)
-                          }
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (file.url) {
+                              navigate("/Chat", {
+                                state: {
+                                  fileUrl: file.url,
+                                  fileId: file._id,
+                                  accessToken,
+                                },
+                              });
+                            }
+                          }}
                         >
                           <FileText size={20} />
                           {shortName}
@@ -312,6 +331,12 @@ export default function Sidebar() {
                           {/* أيقونة تظهر عند hover */}
                           {hovered && !menuOpen && (
                             <span
+                              onClick={(e) => {
+                                e.stopPropagation(); // مهم جدًا
+                                setMenuOpenIndex((prev) =>
+                                  prev === index ? null : index,
+                                );
+                              }}
                               style={{
                                 position: "absolute",
                                 top: "0",
@@ -383,7 +408,8 @@ export default function Sidebar() {
                                   marginBottom: "5px ",
                                   padding: "5px 10px",
                                 }}
-                                onClick={async () => {
+                                onClick={async (e) => {
+                                  e.stopPropagation();
                                   const fileId = file._id || file.id;
 
                                   if (!fileId) {
